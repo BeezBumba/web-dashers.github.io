@@ -40,28 +40,66 @@
 	</script>
 	<script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js', { scope: '' })
-    .then((registration) => {
-      console.log("SW registered:", registration);
+  let swRegistration;
 
-      const sendCacheList = (sw) => {
-        const data = {
-          type: 'CACHE_URLS',
-          payload: [
-            location.href,
-            ...performance.getEntriesByType('resource').map((r) => r.name)
-          ]
-        };
-        sw.postMessage(data);
-      };
+  const getRefreshPayload = () => {
+    const resources = performance
+      .getEntriesByType('resource')
+      .map((resource) => resource.name)
+      .filter((url) => {
+        try {
+          return new URL(url, location.href).origin === location.origin;
+        } catch {
+          return false;
+        }
+      });
 
-      if (registration.installing) {
-        sendCacheList(registration.installing);
-      } else if (navigator.serviceWorker.controller) {
-        sendCacheList(navigator.serviceWorker.controller);
-      }
-    })
-    .catch((err) => console.log('SW registration FAIL:', err));
+    return [location.href, ...resources];
+  };
+
+  const requestCacheRefresh = async () => {
+    const registration = swRegistration || (await navigator.serviceWorker.getRegistration());
+    const worker = registration?.active || navigator.serviceWorker.controller;
+
+    if (!worker) {
+      console.log('No active service worker is ready for cache refresh yet.');
+      return;
+    }
+
+    worker.postMessage({
+      type: 'REFRESH_CACHE',
+      payload: getRefreshPayload()
+    });
+
+    console.log('Requested service worker cache refresh from network.');
+  };
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'REFRESH_CACHE_DONE') {
+      console.log('Service worker cache refresh finished:', event.data.results);
+    }
+  });
+
+  window.addEventListener('keydown', (event) => {
+    const isUpdateShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'u';
+
+    if (!isUpdateShortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    requestCacheRefresh();
+  });
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) => {
+        swRegistration = registration;
+        console.log('SW registered:', registration);
+      })
+      .catch((err) => console.log('SW registration FAIL:', err));
+  });
 }
 </script>
 
