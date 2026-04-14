@@ -1,4 +1,4 @@
-const KEY = 'GD';
+const KEY = 'GDV2';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
@@ -19,27 +19,31 @@ self.addEventListener('message', (event) => {
     }
 });
 
-// Fetch handler
-self.addEventListener("fetch", (e) => {
-  e.respondWith(
-    (async () => {
-      try {
-        const cached = await caches.match(e.request);
-        if (cached) {
-          console.log(`[SW] Cache hit: ${e.request.url}`);
-          return cached;
-        }
+// Fetch handler - cache first
+self.addEventListener('fetch', (e) => {
+    e.respondWith(
+        (async () => {
+            const cache = await caches.open(KEY);
+            const cached = await cache.match(e.request);
 
-        console.log(`[SW] Fetching: ${e.request.url}`);
-        const response = await fetch(e.request);
+            if (cached) {
+                console.log(`[SW] Cache hit: ${e.request.url}`);
+                return cached;
+            }
 
-        const cache = await caches.open(KEY);
-        cache.put(e.request, response.clone());
+            try {
+                console.log(`[SW] Fetching from network: ${e.request.url}`);
+                const response = await fetch(e.request);
 
-        return response;
-      } catch (err) {
-        console.error(`[SW] Fetch failed: ${err}`);
-      }
-    })()
-  );
+                if (response && response.ok) {
+                    await cache.put(e.request, response.clone());
+                }
+
+                return response;
+            } catch (err) {
+                console.error(`[SW] Fetch failed: ${err}`);
+                throw err;
+            }
+        })()
+    );
 });
