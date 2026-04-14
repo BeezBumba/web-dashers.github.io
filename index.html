@@ -39,18 +39,32 @@
     };
 	</script>
 	<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js")
-        .then(reg => {
-          console.log("Service Worker registered:", reg);
-        })
-        .catch(err => {
-          console.error("Service Worker registration failed:", err);
-        });
-    });
-  }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js', { scope: '' })
+    .then((registration) => {
+      console.log("SW registered:", registration);
+
+      const sendCacheList = (sw) => {
+        const data = {
+          type: 'CACHE_URLS',
+          payload: [
+            location.href,
+            ...performance.getEntriesByType('resource').map((r) => r.name)
+          ]
+        };
+        sw.postMessage(data);
+      };
+
+      if (registration.installing) {
+        sendCacheList(registration.installing);
+      } else if (navigator.serviceWorker.controller) {
+        sendCacheList(navigator.serviceWorker.controller);
+      }
+    })
+    .catch((err) => console.log('SW registration FAIL:', err));
+}
 </script>
+
 
 </head>
 
