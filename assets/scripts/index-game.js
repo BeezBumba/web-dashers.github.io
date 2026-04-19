@@ -6931,7 +6931,6 @@ this._escKey.on("down", () => {
     this._level.topContainer.setVisible(true);
     this._player.setCubeVisible(true);
     this._player.reset();
-<<<<<<< HEAD
     this._isDual = false;
     this._state2.reset();
     this._player2.reset();
@@ -6940,9 +6939,7 @@ this._escKey.on("down", () => {
     this._player2.setBallVisible(false);
     this._player2.setWaveVisible(false);
     this._attemptsLabel.setVisible(this._attempts > 1);
-=======
     this._attemptsLabel.setVisible(!window.practiceMode && this._attempts > 1);
->>>>>>> 261335f (Create Practice Mode)
     this._positionAttemptsLabel();
     let gamemode = parseInt(window.settingsMap["kA2"] || "0");
     if (gamemode == 1) {
