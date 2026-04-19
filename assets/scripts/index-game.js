@@ -26,7 +26,6 @@ window.orbClickShrinkTime = 250;
 window.orbParticleSize = 3.5;
 window.showPercentage = true;
 window.practiceMode = localStorage.getItem("practiceMode") === "true";
-
 // -------------------------------
 
 function hexToHexadecimal(str) {
@@ -3041,7 +3040,7 @@ hitGround() {
       const _0x2248d5 = this._scene._playerWorldX;
       const _0x17e0bb = this.p.gravityFlipped ? b(this.p.y) - 30 : b(this.p.y) + 30;
       _0x31584b.explode(10, _0x2248d5, _0x17e0bb);
-      if (window.practiceMode) {
+	  if (window.practiceMode) {
         this._scene._saveCheckpoint();
         this._scene._showCheckpointIndicator(_0x2248d5, _0x17e0bb);
       }
@@ -3120,7 +3119,7 @@ hitGround() {
       },
       onComplete: () => _0x438d80.destroy()
     });
-    _0x3f4b84._deathParticles = _deathParticles;
+	_0x3f4b84._deathParticles = _deathParticles;
     _0x3f4b84._deathGraphics = _0x438d80;
     _0x3f4b84._deathTween = _deathTween;
     this._createExplosionPieces(_0x3f0446, _0x53ac5b, _0x281e43);
@@ -4735,7 +4734,7 @@ class xs extends Phaser.Scene {
     };
     this._state = new PlayerState();
     this._level = new us(this, this._cameraXRef);
-    this._checkpoint = null;
+	this._checkpoint = null;
     this._deathParticles = null;
     this._deathGraphics = null;
     this._deathTween = null;
@@ -6063,10 +6062,9 @@ this._escKey.on("down", () => {
         const innerRadius = innerH2 / 2;
         const fillW = Math.max(innerH2, innerW2 * bestNormal / 100);
 
-        console.log({ bestNormal, fillW });
+      console.log({ bestNormal, fillW });
       
-      if(bestNormal > 0) {
-        const barFg = this.add.graphics().setScrollFactor(0).setDepth(155);
+      const barFg = this.add.graphics().setScrollFactor(0).setDepth(155);
         barFg.fillStyle(0x00FF00, 1);
         
         const rightR = (bestNormal >= 100) ? innerRadius : 0;
@@ -6082,7 +6080,7 @@ this._escKey.on("down", () => {
           cardContainer.add(barFg);
         }
 
-        const pctLabel = this.add.bitmapText(cx, barAreaY, "bigFont", Math.round(bestNormal) + "%", 22)
+      const pctLabel = this.add.bitmapText(cx, barAreaY, "bigFont", Math.round(bestNormal) + "%", 22)
           .setScrollFactor(0).setDepth(156).setOrigin(0.5, 0.5);
         barObjs.push(pctLabel);
         cardContainer.add(pctLabel);
@@ -6938,7 +6936,6 @@ this._escKey.on("down", () => {
     this._player2.setShipVisible(false);
     this._player2.setBallVisible(false);
     this._player2.setWaveVisible(false);
-    this._attemptsLabel.setVisible(this._attempts > 1);
     this._attemptsLabel.setVisible(!window.practiceMode && this._attempts > 1);
     this._positionAttemptsLabel();
     let gamemode = parseInt(window.settingsMap["kA2"] || "0");
@@ -7117,7 +7114,7 @@ this._escKey.on("down", () => {
       this._player.enterWaveMode();
     }
   }
-  _saveCheckpoint() {
+ _saveCheckpoint() {
     if (!window.practiceMode) return;
     this._checkpoint = {
       playerX: this._playerWorldX,
