@@ -1,4 +1,4 @@
-const KEY = 'GDV2';
+const KEY = 'GDV3';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(self.skipWaiting());
