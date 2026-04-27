@@ -2880,6 +2880,12 @@ class ps {
     this._hitboxGraphics = scene.add.graphics().setScrollFactor(0).setDepth(20);
     this._initParticles(scene);
     scene.events.on("shutdown", () => this._cleanupExplosion());
+    this.noclipStats = {
+      totalFrames: 0,
+      deathFrames: 0,
+      accuracy: 100,
+      deaths: 0
+    };
   }
   _createSprites() {
     const spriteY = this._scene;
@@ -3715,7 +3721,7 @@ if (this.p.isFlying || this.p.isUfo) {
     }
     this._gameLayer.setFlyMode(false, 0);
   }
-hitGround() {
+  hitGround() {
     const _0x4a38a5 = !this.p.onGround;
     if (!this.p.isFlying && !this.p.isWave && !this.p.isUfo) {
       this.p.lastGroundY = this.p.y;
@@ -4026,11 +4032,17 @@ hitGround() {
     }
     this._explosionPieces = null;
   }
-  _playPortalShine(_0x49e81f) {
+  _playPortalShine(_0x49e81f, type = 1) {
     const _0x4ed8ff = this._scene;
     const _0xf31b0d = _0x49e81f.x;
     const _0x3824c0 = b(_0x49e81f.portalY);
-    const _0x19c6b0 = ["portalshine_02_front_001.png", "portalshine_02_back_001.png"];
+
+    const typeStr = (type === 1) ? "02" : "01";
+    const _0x19c6b0 = [
+      `portalshine_${typeStr}_front_001.png`,
+      `portalshine_${typeStr}_back_001.png`
+    ];
+
     const _0x5d636a = [this._gameLayer.topContainer, this._gameLayer.container];
     for (let _0x34fd8c = 0; _0x34fd8c < 2; _0x34fd8c++) {
       const _0x4bfe30 = R(_0x4ed8ff, _0x19c6b0[_0x34fd8c]);
@@ -4210,18 +4222,6 @@ hitGround() {
     }
   }
   updateJump(_0x3d1c6f) {
-    const objectsUnderPointer = this._scene.input.manager.hitTest(
-      this._scene.input.activePointer, 
-      this._scene._startPosGui.list,
-      this._scene.cameras.main
-    );
-    const isOverUI = objectsUnderPointer.length > 0;
-
-    if (isOverUI){
-      this.p.upKeyDown = false;
-      this.p.upKeyPressed = false;
-    }
-
     if (this.p.pendingVelocity !== null) {
       this.p.yVelocity = this.p.pendingVelocity;
       this.p.pendingVelocity = null;
@@ -4245,7 +4245,7 @@ hitGround() {
       this._updateUfoJump(_0x3d1c6f);
     } else if (this.p.isSpider) {
       this._updateSpiderJump(_0x3d1c6f);
-    } else if (this.p.upKeyDown && this.p.canJump && !isOverUI) {
+    } else if (this.p.upKeyDown && this.p.canJump && !this.p.touchingRing) {
       this.p.isJumping = true;
       this.p.onGround = false;
       this.p.canJump = false;
@@ -4464,6 +4464,8 @@ _updateBallJump(_0x2fe319) {
     }
   }
   checkCollisions(_0x2f5078) {
+    this.noclipStats.totalFrames++;
+    this.p.diedThisFrame = false;
     const playerSize = this.p.isMini ? 18 : 30;
     const waveHitSize = this.p.isMini ? 6 : 9;
     const pieceWidth = _0x2f5078 + centerX;
@@ -4473,15 +4475,11 @@ _updateBallJump(_0x2fe319) {
     this.p.collideTop = 0;
     this.p.collideBottom = 0;
     this.p.onCeiling = false;
+    this.p.touchingRing = false;
     let _0x30410f = false;
     let _boostedThisStep = false;
     const _0x198534 = this._gameLayer.getNearbySectionObjects(pieceWidth);
     for (let gameObj of _0x198534) {
-      if (gameObj.type === "hazard") {
-        if (window.noClip) {
-          continue;
-        }
-      }
       let left = gameObj.x - gameObj.w / 2;
       let right = gameObj.x + gameObj.w / 2;
       let top = gameObj.y - gameObj.h / 2;
@@ -4571,13 +4569,13 @@ _updateBallJump(_0x2fe319) {
         } else if (_colType === "portal_gravity_down") {
           if (!gameObj.activated) {
             gameObj.activated = true;
-            this._playPortalShine(gameObj);
+            this._playPortalShine(gameObj, 2);
             this.flipGravity(false, 0.5);
           }
         } else if (_colType === "portal_gravity_up") {
           if (!gameObj.activated) {
             gameObj.activated = true;
-            this._playPortalShine(gameObj);
+            this._playPortalShine(gameObj, 2);
             this.flipGravity(true, 0.5);
           }
         } else if (_colType === "portal_mirror_on") {
@@ -4691,7 +4689,9 @@ _updateBallJump(_0x2fe319) {
         } else if (_colType === jumpRingType) {
           const _orbId = gameObj.orbId;
           const _isDash = (_orbId === 1704 || _orbId === 1751);
-          const _needsClick = _isDash ? this.p.upKeyDown : (this.p.queuedHold && this.p.upKeyDown);
+          const justPressed = this.p.upKeyDown && !this.p.wasUpKeyDown;
+          const _needsClick = (this.p.isFlying || this.p.isUfo) ? justPressed : (_isDash ? this.p.upKeyDown : (justPressed || (this.p.queuedHold && this.p.upKeyDown)));
+          this.p.touchingRing = true;
           if (!gameObj.activated && _needsClick) {
             if (_isDash) {
               gameObj._dashHoldTicks = (gameObj._dashHoldTicks || 0) + 1;
@@ -4851,7 +4851,10 @@ _updateBallJump(_0x2fe319) {
             } catch(e) {}
           }
         } else if (_colType === hazardType) {
-          if (window.noClip) continue;
+          if (window.noClip) {
+            this.p.diedThisFrame = true; 
+            continue;
+          }
           if (_hasCircleHitbox) {
             const _hdx = pieceWidth - gameObj.x;
             const _hdy = playersY - gameObj.y;
@@ -4885,6 +4888,7 @@ _updateBallJump(_0x2fe319) {
           const _0xLandTop = (this.p.yVelocity >= 0 || this.p.onGround) && (_0x3e7199 <= top || _0x135a9d <= top);
           const isstandingOnAPlatform = this.p.gravityFlipped ? _0xLandTop : _0xLandBot;
           if (iscolliding && !isstandingOnAPlatform) {
+            if (window.noClip) this.p.diedThisFrame = true;
             if (window.noClip || gameObj.objid === 143) continue
             this.killPlayer();
             return;
@@ -4938,6 +4942,7 @@ _updateBallJump(_0x2fe319) {
             }
             if (!this.p.gravityFlipped && (_0x3e7199 <= top || _0x135a9d <= top) && this.p.yVelocity >= 0) {
               if (iscolliding) {
+                if (window.noClip) this.p.diedThisFrame = true;
                 if (window.noClip || gameObj.objid === 143) continue;
                 this.killPlayer();
                 return;
@@ -4958,6 +4963,7 @@ _updateBallJump(_0x2fe319) {
     }
     if (this.p.collideTop !== 0 && this.p.collideBottom !== 0) {
       if (Math.abs(this.p.collideTop - this.p.collideBottom) < 48) {
+        if (window.noClip) this.p.diedThisFrame = true;
         if (!window.noClip) {
           this.killPlayer();
           return;
@@ -4968,9 +4974,33 @@ _updateBallJump(_0x2fe319) {
     const iscube = !this.p.isFlying && !this.p.isBall && !this.p.isWave && !this.p.isUfo && !this.p.isSpider;
     const _effectiveSize = this.p.isWave ? waveHitSize : playerSize;
     if (!_0x30410f && !_boostedThisStep) {
-      if (!this.p.gravityFlipped && this.p.y <= _0x3020c8 + _effectiveSize) {
-        this.p.y = _0x3020c8 + _effectiveSize;
-        this.hitGround();
+      let gravCeilY = this._gameLayer.getCeilingY();
+
+      if (!_0x30410f && !_boostedThisStep) {
+        if (this.p.y <= _0x3020c8 + _effectiveSize) {
+          if (!this.p.gravityFlipped || !iscube) {
+            this.p.y = _0x3020c8 + _effectiveSize;
+            this.hitGround();
+            if (this.p.gravityFlipped) this.p.onCeiling = true;
+          } else if (this.p.gravityFlipped && iscube && this.p.yVelocity < -0.5) {
+            if (window.noClip) {
+              this.p.diedThisFrame = true;
+            } else {
+              this.killPlayer();
+              return;
+            }
+          }
+        }
+
+        if (gravCeilY !== null) {
+          if (this.p.y >= gravCeilY - _effectiveSize) {
+            if (this.p.gravityFlipped) {
+              this.p.y = gravCeilY - _effectiveSize;
+              this.hitGround();
+              this.p.onCeiling = true;
+            }
+          }
+        }
       }
       if (!this.p.gravityFlipped && !window.noClip && this.p.y < _0x3020c8 - 30) {
         this.p.y = _0x3020c8 + _effectiveSize;
@@ -5011,6 +5041,25 @@ _updateBallJump(_0x2fe319) {
         this.p.onGround = false;
       }
     }
+    this.p.wasUpKeyDown = this.p.upKeyDown;
+    if (this.p.diedThisFrame == true && window.noClipAccuracy){
+      this.noclipStats.deathFrames++;
+      this._scene.tweens.killTweensOf(this._scene.noclipFlash);
+      this._scene.tweens.add({
+        targets: this._scene.noclipFlash,
+        alpha: { from: 0.5, to: 0 },
+        duration: 400,
+        ease: 'Cubic.easeOut'
+      });
+      if (this.p.diedLastFrame == false){
+        this.noclipStats.deaths++;
+      }
+    }
+    if (this.noclipStats.totalFrames > 0) {
+      const safeFrames = this.noclipStats.totalFrames - this.noclipStats.deathFrames;
+      this.noclipStats.accuracy = (safeFrames / this.noclipStats.totalFrames) * 100;
+    }
+    this.p.diedLastFrame = this.p.diedThisFrame;
   }
   drawHitboxes(graphics, camX, camY) {
     graphics.clear();
@@ -5083,34 +5132,40 @@ _updateBallJump(_0x2fe319) {
           const trailXRaw = pos.x - camX;
           const trailX = isFlipped ? screenWidth - trailXRaw : trailXRaw;
           const trailY = b(pos.y) + camY;
+          graphics.lineStyle(1, hexToHexadecimal("ff0000"), 1);
 
-          // 1. Outer box (red)
-          graphics.lineStyle(1, hexToHexadecimal("ff0000"), 0.5);
-          graphics.strokeRect(trailX - playerSize, trailY - playerSize, hitboxsize, hitboxsize);
+          if (!this.p.isWave){
+            // outer box (red)
+            graphics.lineStyle(1, hexToHexadecimal("ff0000"), 0.5);
+            graphics.strokeRect(trailX - playerSize, trailY - playerSize, hitboxsize, hitboxsize);
 
-          // 2. Inner circle (dark red)
-          graphics.lineStyle(1, hexToHexadecimal("b30001"), 0.5);
-          graphics.strokeCircle((trailX - playerSize) + hitboxsize / 2, (trailY - playerSize) + hitboxsize / 2, hitboxsize / 2);
+            // inner circle (dark red)
+            graphics.lineStyle(1, hexToHexadecimal("b30001"), 0.5);
+            graphics.strokeCircle((trailX - playerSize) + hitboxsize / 2, (trailY - playerSize) + hitboxsize / 2, hitboxsize / 2);
 
-          // 3. Inner hitbox (blue square)
-          graphics.lineStyle(1, hexToHexadecimal("0000ff"), 1);
+            graphics.lineStyle(1, hexToHexadecimal("0000ff"), 1);
+          }
+
+          // inner hitbox
           graphics.strokeRect(trailX - 9, trailY - 9, 18, 18);
       });
     }
 
+    // comments so its easier for other people to read ts
     const _0x1e788a = b(playerY) + camY;
     const _playerDrawX = isFlipped ? screenWidth - centerX : centerX;
-    // comments so its easier for other people to read ts
-    // outer box (red)
-    graphics.lineStyle(2, hexToHexadecimal("ff0000"), 0.8);
-    graphics.strokeRect(_playerDrawX - playerSize, _0x1e788a - playerSize, hitboxsize, hitboxsize);
-    // ----
-    // inner circle (dark red)
-    graphics.lineStyle(2, hexToHexadecimal("b30001"), 0.8);
-    graphics.strokeCircle((_playerDrawX - playerSize)+hitboxsize/2, (_0x1e788a - playerSize)+hitboxsize/2, hitboxsize/2);
-    // ----
-    // inner hitbox (blue)
-    graphics.lineStyle(2, hexToHexadecimal("0000ff"), 1);
+    graphics.lineStyle(1, hexToHexadecimal("ff0000"), 1);
+    if (!this.p.isWave){
+      // outer box (red)
+      graphics.lineStyle(2, hexToHexadecimal("ff0000"), 0.8);
+      graphics.strokeRect(_playerDrawX - playerSize, _0x1e788a - playerSize, hitboxsize, hitboxsize);
+      // inner circle (dark red)
+      graphics.lineStyle(2, hexToHexadecimal("b30001"), 0.8);
+      graphics.strokeCircle((_playerDrawX - playerSize)+hitboxsize/2, (_0x1e788a - playerSize)+hitboxsize/2, hitboxsize/2);
+
+      graphics.lineStyle(2, hexToHexadecimal("0000ff"), 1);
+    }
+    // inner hitbox
     graphics.strokeRect(_playerDrawX - 9, _0x1e788a - 9, 18, 18);
   }
   playEndAnimation(_0x24408e, _0x281588, _0x54bbf4) {
@@ -5600,7 +5655,7 @@ class ys {
     if (!this._music) return;
     const isPracticeMode = this._scene._practicedMode && this._scene._practicedMode.practiceMode;
     const expectedSongKey = isPracticeMode ? "StayInsideMe" : window.currentlevel[0];
-    if (this._music.key !== expectedSongKey) {
+    if (this._music.key !== expectedSongKey && window._onlineSongKey !== expectedSongKey) {
       const offset = this._scene._getStartPosMusicOffset();
       this.startMusic(offset);
     }
@@ -6083,7 +6138,9 @@ class xs extends Phaser.Scene {
         const levelIdParsed = gdMap["1"] || levelId;
         const songIdRaw     = (gdMap["35"] || "").trim();
         const isCustomSong  = !!songIdRaw && songIdRaw !== "0";
-        const songKey       = isCustomSong ? `ng_song_${songIdRaw}` : window.currentlevel[0];
+        const officialSongId = gdMap["12"] || "0";
+        const songKey = isCustomSong ? `ng_song_${songIdRaw}` : window.allLevels[officialSongId][0];
+        window.currentlevel[0] = songKey;
         window._onlineSongOffset = parseFloat(gdMap["45"] || "0") || 0;
         console.log("song offset (field 45):", window._onlineSongOffset);
         console.log("level:", levelName, "| songId:", songIdRaw, "| custom:", isCustomSong);
@@ -6137,7 +6194,7 @@ class xs extends Phaser.Scene {
         window._onlineLevelId     = "online_" + levelIdParsed;
         this.game.registry.set("autoStartGame", true);
         window.currentlevel = [
-          isCustomSong ? songKey : window.currentlevel[0],
+          songKey,
           levelName,
           window._onlineLevelId,
           [window._onlineSongArtist || "Unknown"]
@@ -6934,6 +6991,29 @@ class xs extends Phaser.Scene {
       .setAlpha(0.4)
       .setDepth(100)
       .setVisible(false);
+
+    this._accuracyIndicator = this.add.bitmapText(10, 30, "bigFont", "100.00%", 20)
+      .setOrigin(0, 0)
+      .setAlpha(0.4)
+      .setDepth(100)
+      .setVisible(false);
+
+    this._deathsIndicator = this.add.bitmapText(10, 50, "bigFont", "0 Deaths", 20)
+      .setOrigin(0, 0)
+      .setAlpha(0.4)
+      .setDepth(100)
+      .setVisible(false);
+
+    this.noclipFlash = this.add.rectangle(
+      this.cameras.main.centerX, 
+      this.cameras.main.centerY, 
+      this.cameras.main.width, 
+      this.cameras.main.height, 
+      0xff0000
+    );
+    this.noclipFlash.setScrollFactor(0);
+    this.noclipFlash.setDepth(99);
+    this.noclipFlash.setAlpha(0);
 
     this._updatePracticeHUDBar = () => {};
 
@@ -7910,6 +7990,11 @@ _buildSettingsPopup() {
         () => window.solidWave, 
         (v) => window.solidWave = v
     );
+
+    createToggle(column2X, startY + (spacingY * 2), "Noclip Accuracy", 
+        () => window.noClipAccuracy, 
+        (v) => window.noClipAccuracy = v
+    );
   }
   _saveSettings() {
     const settings = {
@@ -7920,7 +8005,8 @@ _buildSettingsPopup() {
         startPosSwitcher: window.startPosSwitcher,
         hitboxTrail: window.showHitboxTrail,
         showFPS: this._fpsText.visible,
-        solidWaveTrail: window.solidWave
+        solidWaveTrail: window.solidWave,
+        noclipAccuracy: window.noClipAccuracy
     };
     localStorage.setItem("gd_settings", JSON.stringify(settings));
   }
@@ -7934,7 +8020,8 @@ _buildSettingsPopup() {
         startPosSwitcher: false,
         hitboxTrail: false,
         showFPS: false,
-        solidWaveTrail: false
+        solidWaveTrail: false,
+        noclipAccuracy: false
     };
 
     const data = saved ? JSON.parse(saved) : defaults;
@@ -7947,6 +8034,7 @@ _buildSettingsPopup() {
     window.showHitboxTrail = data.hitboxTrail;
     this._fpsText.visible = data.showFPS;
     window.solidWave = data.solidWaveTrail;
+    window.noClipAccuracy = data.noclipAccuracy;
   }
   _buildInfoPopup() {
     if (this._infoPopup) {
@@ -7976,13 +8064,13 @@ _buildSettingsPopup() {
     const _0x3cdf70a = this.add.bitmapText(xPos, yPos, "goldFont", "Modded by:", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70a);
     yPos += 35;
-    const _0x3cdf70b = this.add.bitmapText(xPos, yPos, "goldFont", "AntiMatter, breadbb, bog, aloaf", 40).setOrigin(0.5, 0.5).setScale(0.6);
+    const _0x3cdf70b = this.add.bitmapText(xPos, yPos, "goldFont", "AntiMatter, breadbb, bog, aloaf,", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70b);
     yPos += 35;
-    const _0x3cdf70c = this.add.bitmapText(xPos, yPos, "goldFont", "PinkDev, rohanis0000, arbstro", 40).setOrigin(0.5, 0.5).setScale(0.6);
+    const _0x3cdf70c = this.add.bitmapText(xPos, yPos, "goldFont", "PinkDev, rohanis0000, arbstro,", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70c);
     yPos += 35;
-    const _0x3cdf70d = this.add.bitmapText(xPos, yPos, "goldFont", "Lasokar", 40).setOrigin(0.5, 0.5).setScale(0.6);
+    const _0x3cdf70d = this.add.bitmapText(xPos, yPos, "goldFont", "q8j, and Lasokar.", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70d);
     yPos += 35;
     const _0x97b2a9 = this.add.text(xPos, 463, "© 2026 RobTop Games. All rights reserved.", {
@@ -8478,6 +8566,15 @@ _buildSettingsPopup() {
     }
   }
   _pushButton() {
+    const objectsUnderPointer = this.input.manager.hitTest(
+      this.input.activePointer, 
+      this._startPosGui.list,
+      this.cameras.main
+    );
+    const isOverUI = objectsUnderPointer.length > 0;
+    const fromClick = this.input.activePointer.isDown;
+    const cancelInput = isOverUI && fromClick;
+
     if (this._menuActive) {
       this._audio.playEffect("playSound_01", {
         volume: 1
@@ -8485,7 +8582,7 @@ _buildSettingsPopup() {
       this._startGame();
       return;
     }
-    if (!this._slideIn && !this._state.isDead) {
+    if (!this._slideIn && !this._state.isDead && !cancelInput) {
       this._state.upKeyDown = true;
       this._state.upKeyPressed = true;
       this._state.queuedHold = true;
@@ -8634,6 +8731,9 @@ _buildSettingsPopup() {
     this._level.resetVisibility();
     if (this._orbGfx) { this._orbGfx.clear(); }
     this._colorManager.reset();
+    this._player.noclipStats.totalFrames = 0;
+    this._player.noclipStats.deathFrames = 0;
+    this._player.noclipStats.deaths = 0;
 
     const musicOffset = this._getStartPosMusicOffset();
     const startPositions = this._level.getStartPositions();
@@ -8947,6 +9047,10 @@ _buildSettingsPopup() {
     this._percentageLabel.setVisible(window.showPercentage && !this._menuActive);
     this._startPosGui.setVisible(window.startPosSwitcher && !this._menuActive);
     this._noclipIndicator.setVisible(window.noClip && !this._menuActive);
+    this._accuracyIndicator.setVisible(window.noClip && window.noClipAccuracy && !this._menuActive);
+    this._deathsIndicator.setVisible(window.noClip && window.noClipAccuracy && !this._menuActive);
+    this._accuracyIndicator.setText(`${this._player.noclipStats.accuracy.toFixed(2)}%`);
+    this._deathsIndicator.setText(`${this._player.noclipStats.deaths} Deaths`);
 
     this._fpsAccum += deltaTime;
     this._fpsFrames++;
@@ -9052,9 +9156,24 @@ _buildSettingsPopup() {
       this._releaseButton();
     }
     this._spaceWasDown = _0x368ad9;
+
+    const objectsUnderPointer = this.input.manager.hitTest(
+      this.input.activePointer, 
+      this._startPosGui.list,
+      this.cameras.main
+    );
+    const isOverUI = objectsUnderPointer.length > 0;
+    const fromClick = this.input.activePointer.isDown;
+    const cancelInput = isOverUI && fromClick;
+
     if (!!this.input.activePointer.isDown && !this._state.upKeyDown && !this._state.isDead) {
       this._state.upKeyDown = true;
       this._state.queuedHold = true;
+    }
+    if (cancelInput){
+      this._state.upKeyDown = false;
+      this._state.upKeyPressed = false;
+      this._state.queuedHold = false;
     }
     this._level.updateEndPortalY(this._cameraY, this._state.isFlying || this._state.isWave || this._state.isUfo);
     if (!this._levelWon && !this._state.isDead && this._level.endXPos > 0) {
