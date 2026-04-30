@@ -1,3 +1,12 @@
+// -1: No color
+// 1: P Color
+// 2: P Color 2
+// 1000: Background Color
+// 1001: Ground Color
+// 1004: Default Color (white)
+// 1006: Glow
+// 1011: Detail Color FOr animated blocks (ill add some later)
+
 window.allobjects = function() {
     return {
   "0": {
@@ -681,7 +690,8 @@ window.allobjects = function() {
   "66": {
     "type": "solid",
     "frame": "square_b_05_001.png",
-    "can_color": false,
+    "can_color": true,
+    "black": true,
     "gridW": 1,
     "gridH": 0.5,
     "default_detail_color_channel": -1,
@@ -816,13 +826,11 @@ window.allobjects = function() {
       {
         "frame": "square_c_05_001.png",
         "localDy": 0,
-        "tint": 65280,
         "z": -1
       },
       {
         "frame": "blockOutline_05_001.png",
         "localDy": 0,
-        "tint": 65280,
         "z": 1
       }
     ],
@@ -17088,15 +17096,14 @@ window.allobjects = function() {
     "can_color": false,
     "children": [
       {
-        "frame": "gravring_01_001.png",
+        "frame": "gravJumpRing_01_001.png",
         "localDy": 0,
-        "tint": 65280,
         "z": -1
       }
     ],
     "default_base_color_channel": 0,
-    "frame": "gravring_01_001.png",
-    "glow_frame": "gravring_01_glow_001.png",
+    "frame": "gravJumpRing_01_001.png",
+    "glow_frame": "gravJumpRing_01_glow_001.png",
     "gridH": 1,
     "gridW": 1,
     "spritesheet": "GJ_GameSheet-uhd",
