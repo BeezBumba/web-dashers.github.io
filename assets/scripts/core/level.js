@@ -265,7 +265,7 @@ function getObjectFromId(id) {
   return allObjects[id] || null;
 }
 
-window.us = class us {
+window.LevelObject = class LevelObject {
   constructor(scene, cameraXRef) {
     this._scene = scene;
     this._cameraXRef = cameraXRef;
@@ -671,7 +671,7 @@ window.us = class us {
       dx: offsetX,
       dy: offsetY
     } = function (scene, frameName) {
-      let textureInfo = R(scene, frameName);
+      let textureInfo = getAtlasFrame(scene, frameName);
       if (!textureInfo) {
         return {
           dx: 0,
@@ -765,10 +765,10 @@ window.us = class us {
     if (!glowFrameName) {
       return;
     }
-    if (!R(scene, glowFrameName) && !scene.textures.exists(glowFrameName)) {
+    if (!getAtlasFrame(scene, glowFrameName) && !scene.textures.exists(glowFrameName)) {
       return;
     }
-    let glowSprite = L(scene, x, y, glowFrameName);
+    let glowSprite = addImageToScene(scene, x, y, glowFrameName);
     if (glowSprite) {
       this._applyVisualProps(scene, glowSprite, glowFrameName, objectData);
       glowSprite.setBlendMode(S);
@@ -938,7 +938,7 @@ window.us = class us {
         };
         if (_0x501fde) {
           const _0x32e8a1 = frameName.replace("_front_", "_back_");
-          let backSprite = L(scene, spriteWorldX, baseY, _0x32e8a1);
+          let backSprite = addImageToScene(scene, spriteWorldX, baseY, _0x32e8a1);
           if (backSprite) {
             this._applyVisualProps(scene, backSprite, _0x32e8a1, levelObj);
             backSprite._eeLayer = 1;
@@ -964,7 +964,7 @@ window.us = class us {
           ...objectDef,
           _portalFront: true
         } : objectDef;
-        let sprite = L(scene, spriteWorldX, baseY, frameName);
+        let sprite = addImageToScene(scene, spriteWorldX, baseY, frameName);
         if (sprite) {
           this._applyVisualProps(scene, sprite, frameName, levelObj, objectDef);
           this._addVisualSprite(sprite, _0x36f679);
@@ -1005,7 +1005,7 @@ window.us = class us {
             sprite.setTint(0x000000);
             sprite._isSaw = true;
             this._sawSprites.push(sprite);
-            let _sawMirror = L(scene, spriteWorldX, baseY, frameName);
+            let _sawMirror = addImageToScene(scene, spriteWorldX, baseY, frameName);
             if (_sawMirror) {
               this._applyVisualProps(scene, _sawMirror, frameName, levelObj, objectDef);
               _sawMirror.setTint(0x000000);
@@ -1024,7 +1024,7 @@ window.us = class us {
         }
         if (objectDef && (objectDef.type === solidType || objectDef.type === hazardType)) {
           let _0x47077e = frameName.replace("_001.png", "_2_001.png");
-          let overlaySprite = R(scene, _0x47077e) ? L(scene, spriteWorldX, baseY, _0x47077e) : null;
+          let overlaySprite = getAtlasFrame(scene, _0x47077e) ? addImageToScene(scene, spriteWorldX, baseY, _0x47077e) : null;
           if (overlaySprite) {
             this._applyVisualProps(scene, overlaySprite, _0x47077e, levelObj);
             this._addVisualSprite(overlaySprite);
@@ -1058,7 +1058,7 @@ window.us = class us {
             }
             const _childWorldX = worldX + _0x3b4e8c;
             const _childBaseY = baseY + _0x172131;
-            let childSprite = L(scene, spriteWorldX + _0x3b4e8c, baseY + _0x172131, childDef.frame);
+            let childSprite = addImageToScene(scene, spriteWorldX + _0x3b4e8c, baseY + _0x172131, childDef.frame);
             if (childSprite) {
               this._applyVisualProps(scene, childSprite, childDef.frame, levelObj, childDef);
               if (childDef.audioScale) {
@@ -1084,7 +1084,7 @@ window.us = class us {
                 childSprite.setTint(0x000000);
                 childSprite._isSaw = true;
                 this._sawSprites.push(childSprite);
-                let _childMirror = L(scene, spriteWorldX + _0x3b4e8c, baseY + _0x172131, childDef.frame);
+                let _childMirror = addImageToScene(scene, spriteWorldX + _0x3b4e8c, baseY + _0x172131, childDef.frame);
                 if (_childMirror) {
                   this._applyVisualProps(scene, _childMirror, childDef.frame, levelObj, childDef);
                   _childMirror.setTint(0x000000);
@@ -2035,6 +2035,9 @@ window.us = class us {
   resetObjects() {
     for (let _0x3d473e of this.objects) {
       _0x3d473e.activated = false;
+      if (_0x3d473e._dashHoldTicks !== undefined) {
+        _0x3d473e._dashHoldTicks = 0;
+      }
     }
     for (let _0x5c5d9a of this._audioScaleSprites) {
       _0x5c5d9a.setScale(0.1);

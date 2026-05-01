@@ -65,7 +65,7 @@ function loadFont(scene, fontName, fontData) {
   scene.cache.bitmapFont.add(fontName, { data: fontConfig, texture: fontName, frame: null });
 }
 
-class A extends Phaser.Scene {
+class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: "BootScene" });
   }
@@ -131,7 +131,7 @@ class A extends Phaser.Scene {
         loadFont(this, "goldFont", goldFontData);
       }
       const msg = LOADING_MESSAGES[Math.floor(Math.random() * LOADING_MESSAGES.length)];
-      this.add.bitmapText(cx, cy + 187, "goldFont", msg, 28).setOrigin(0.5);
+      this.add.bitmapText(cx, cy + 187, "goldFont", msg, 30).setOrigin(0.5);
       const robtopLogo = this.add.image(cx, cy - 120, "GJ_LaunchSheet", "RobTopLogoBig_001.png").setOrigin(0.5).setScale(0.8);
       const gjLogo = this.add.image(cx, cy, "GJ_WebSheet", "gj_logo.png").setOrigin(0.5);
       this.children.bringToTop(robtopLogo);
@@ -201,11 +201,11 @@ class A extends Phaser.Scene {
       this.load.audio("highscoreGet02", "assets/sfx/highscoreGet02.ogg");
 
       this.load.on("progress", (value) => {
-        if (sliderFill) sliderFill.width = value * 306;
+        if (sliderFill) sliderFill.width = value * 380;
       });
       this.load.on("loaderror", () => {});
       this.load.once("complete", () => {
-        if (sliderFill) sliderFill.width = 306;
+        if (sliderFill) sliderFill.width = 380;
         this.time.delayedCall(200, () => {
           const bigFontData = this.cache.text.get("bigFontFnt");
           if (bigFontData) loadFont(this, "bigFont", bigFontData);

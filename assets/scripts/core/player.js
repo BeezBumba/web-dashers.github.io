@@ -38,7 +38,7 @@ class PlayerState {
   }
 }
 
-class cs {
+class StreakManager {
   constructor(_0x9c2356, _0x171c7f, _0x49d49a, _0xb01616, _0x5aac4b, _0x293ce3, _0x5c7bc5 = 16777215, _0x5a3e29 = 1) {
     this._color = _0x5c7bc5;
     this._opacity = _0x5a3e29;
@@ -65,6 +65,9 @@ class cs {
   addToContainer(_0xa23240, _0x4b05db) {
     _0xa23240.add(this._gfx);
     this._gfx.setDepth(_0x4b05db);
+  }
+  setColor(newColor) {
+    this._color = newColor
   }
   setPosition(_0x388397, _0x292e79) {
     this._posR.x = _0x388397;
@@ -269,7 +272,7 @@ class WaveTrail {
   }
 }
 function ds(scene, _0x592bc1, _0x4d69dc, _0xfb965c, _0x43d3fd, _0x5bbdf1) {
-  let _0x221d10 = R(scene, _0xfb965c);
+  let _0x221d10 = getAtlasFrame(scene, _0xfb965c);
   if (!_0x221d10) {
     return null;
   }
@@ -281,7 +284,7 @@ function ds(scene, _0x592bc1, _0x4d69dc, _0xfb965c, _0x43d3fd, _0x5bbdf1) {
   };
 }
 
-class ps {
+class PlayerObject {
   constructor(scene, _0x3f50cc, _0x2811e1) {
     this._scene = scene;
     this.p = _0x3f50cc;
@@ -624,7 +627,7 @@ class ps {
     this._gameLayer.topContainer.add(this._landEmitter1);
     this._gameLayer.topContainer.add(this._landEmitter2);
     this._landIdx = false;
-    this._streak = new cs(this._scene, "streak_01", 0.231, 10, 8, 100, window.secondaryColor, 0.7);
+    this._streak = new StreakManager(this._scene, "streak_01", 0.231, 10, 8, 100, window.secondaryColor, 0.7);
     this._streak.addToContainer(this._gameLayer.container, 8);
     this._waveTrail = new WaveTrail(this._scene, window.secondaryColor, window.secondaryColor);
     this._waveTrail.addToContainer(this._gameLayer.container, 9);
@@ -1468,7 +1471,7 @@ if (this.p.isFlying || this.p.isUfo) {
 
     const _0x5d636a = [this._gameLayer.topContainer, this._gameLayer.container];
     for (let _0x34fd8c = 0; _0x34fd8c < 2; _0x34fd8c++) {
-      const _0x4bfe30 = R(_0x4ed8ff, _0x19c6b0[_0x34fd8c]);
+      const _0x4bfe30 = getAtlasFrame(_0x4ed8ff, _0x19c6b0[_0x34fd8c]);
       if (!_0x4bfe30) {
         continue;
       }
@@ -2113,7 +2116,7 @@ _updateBallJump(_0x2fe319) {
           const _orbId = gameObj.orbId;
           const _isDash = (_orbId === 1704 || _orbId === 1751);
           const justPressed = this.p.upKeyDown && !this.p.wasUpKeyDown;
-          const _needsClick = (this.p.isFlying || this.p.isUfo) ? justPressed : (_isDash ? this.p.upKeyDown : (justPressed || (this.p.queuedHold && this.p.upKeyDown)));
+          const _needsClick = (this.p.isFlying || this.p.isUfo) ? justPressed : (justPressed || (this.p.queuedHold && this.p.upKeyDown));
           this.p.touchingRing = true;
           if (!gameObj.activated && _needsClick) {
             if (_isDash) {
@@ -2121,13 +2124,12 @@ _updateBallJump(_0x2fe319) {
               if (gameObj._dashHoldTicks < 2) {
                 gameObj.activated = true;
                 const _dashAngleDeg = gameObj.orbRotation || 0;
-                let _clampedAngle = _dashAngleDeg;
-                if (_clampedAngle > 270) { _clampedAngle -= 360; }
-                if (_clampedAngle >= 90 && _clampedAngle <= 270) { _clampedAngle = 180 - _clampedAngle; }
-                _clampedAngle = Math.max(-70, Math.min(70, _clampedAngle));
-                const _dashRad = _clampedAngle * Math.PI / 180;
+                const _dashRad = _dashAngleDeg * Math.PI / 180;
+                const _maxSin = Math.sin(70 * Math.PI / 180);
+                const _rawSin = -Math.sin(_dashRad);
+                const _dashSin = Math.max(-_maxSin, Math.min(_maxSin, _rawSin));
                 const _dashSpeed = 18;
-                const _dashVelY = Math.sin(_dashRad) * _dashSpeed * this.flipMod();
+                const _dashVelY = _dashSin * _dashSpeed * this.flipMod();
                 if (_orbId === 1751) {
                   this.flipGravity(!this.p.gravityFlipped);
                 }
@@ -2253,7 +2255,7 @@ _updateBallJump(_0x2fe319) {
                   else if (_orbId === 141) { _orbVel = _cubeJump * 0.72; }
                   else if (_orbId === 1333) { _orbVel = _cubeJump * 1.38; }
                   else if (_orbId === 84) { _orbVel = _cubeJump; _flipAfter = true; }
-                  else if (_orbId === 1022) { _orbVel = _cubeJump * 0.8; _flipBefore = true; }
+                  else if (_orbId === 1022) { _orbVel = _cubeJump * 1; _flipBefore = true; }
                   else if (_orbId === 1330) { _orbVel = -18; }
                 }
                 this.p.isJumping = true;

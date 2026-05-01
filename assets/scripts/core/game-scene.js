@@ -100,7 +100,7 @@ class PracticeMode {
   }
 }
 
-class xs extends Phaser.Scene {
+class GameScene extends Phaser.Scene {
   constructor() {
     super({
       key: "GameScene"
@@ -123,21 +123,21 @@ class xs extends Phaser.Scene {
       _v: -centerX
     };
     this._state = new PlayerState();
-    this._level = new window.us(this, this._cameraXRef);
+    this._level = new window.LevelObject(this, this._cameraXRef);
     this._orbGfx = null;
     this._orbGfxTimer = 0;
-    this._player = new ps(this, this._state, this._level);
+    this._player = new PlayerObject(this, this._state, this._level);
     this._state2 = new PlayerState();
-    this._player2 = new ps(this, this._state2, this._level);
+    this._player2 = new PlayerObject(this, this._state2, this._level);
     this._isDual = false;
     this._player2.setCubeVisible(false);
     this._player2.setShipVisible(false);
     this._player2.setBallVisible(false);
     this._player2.setWaveVisible(false);
-    this._colorManager = new ms();
+    this._colorManager = new ColorManager();
     this._practicedMode = new PracticeMode();
     if (this._audio == null) {
-      this._audio = new ys(this);
+      this._audio = new AudioManager(this);
     }
     if (window._onlineLevelString && window._onlineLevelId &&
         window.currentlevel[2] === window._onlineLevelId) {
@@ -953,7 +953,7 @@ class xs extends Phaser.Scene {
       for (let ci = 0; ci < rainbowColors.length; ci++) {
         const cx = colorRowStartX + ci * (colorBtnSize + colorPadding);
 
-        const btn1AtlasInfo = R(this, "GJ_colorBtn_001.png");
+        const btn1AtlasInfo = getAtlasFrame(this, "GJ_colorBtn_001.png");
         let btn1;
         if (btn1AtlasInfo) {
           btn1 = this.add.image(cx, colorRow1Y, btn1AtlasInfo.atlas, btn1AtlasInfo.frame).setScrollFactor(0).setDepth(104).setTint(rainbowColors[ci]).setScale(0.5).setInteractive();
@@ -962,7 +962,7 @@ class xs extends Phaser.Scene {
         }
         this._iconOverlayObjects.push(btn1);
 
-        const btn2AtlasInfo = R(this, "GJ_colorBtn_001.png");
+        const btn2AtlasInfo = getAtlasFrame(this, "GJ_colorBtn_001.png");
         let btn2;
         if (btn2AtlasInfo) {
           btn2 = this.add.image(cx, colorRow2Y, btn2AtlasInfo.atlas, btn2AtlasInfo.frame).setScrollFactor(0).setDepth(104).setTint(rainbowColors[ci]).setScale(0.5).setInteractive();
@@ -1026,7 +1026,7 @@ class xs extends Phaser.Scene {
         selectedIcon.setScale(s);
         selectedIcon.setTint(window.mainColor);
         const extraFrame = frame.replace("_001.png", "_2_001.png");
-        const extraInfo = R(this, extraFrame);
+        const extraInfo = getAtlasFrame(this, extraFrame);
         if (extraInfo) {
           selectedIconExtra.setTexture(extraInfo.atlas, extraInfo.frame).setVisible(true).setScale(s).setTint(window.secondaryColor);
         } else {
@@ -1126,7 +1126,7 @@ class xs extends Phaser.Scene {
           ) * 0.7;
           iconImg.setScale(origScale);
           const extraFrame = frame.replace("_001.png", "_2_001.png");
-          const extraInfo = R(this, extraFrame);
+          const extraInfo = getAtlasFrame(this, extraFrame);
           const extraImg = extraInfo
             ? this.add.image(ix, iy, extraInfo.atlas, extraInfo.frame).setScrollFactor(0).setDepth(102).setScale(origScale)
             : null;
@@ -1164,7 +1164,7 @@ class xs extends Phaser.Scene {
                 for (const { lp, suffix, tint } of layerMap) {
                   const layer = this._player[lp];
                   if (!layer || !layer.sprite) continue;
-                  const found = R(this, `${window.currentPlayer}${suffix}`);
+                  const found = getAtlasFrame(this, `${window.currentPlayer}${suffix}`);
                   if (found) {
                     layer.sprite.setTexture(found.atlas, found.frame);
                     if (tint !== null) layer.sprite.setTint(tint);
@@ -1181,7 +1181,7 @@ class xs extends Phaser.Scene {
                 for (const { lp, suffix, tint } of layerMap) {
                   const layer = this._player[lp];
                   if (!layer || !layer.sprite) continue;
-                  const found = R(this, `${window.currentShip}${suffix}`);
+                  const found = getAtlasFrame(this, `${window.currentShip}${suffix}`);
                   if (found) {
                     layer.sprite.setTexture(found.atlas, found.frame);
                     if (tint !== null) layer.sprite.setTint(tint);
@@ -1197,7 +1197,7 @@ class xs extends Phaser.Scene {
                 for (const { lp, suffix, tint } of layerMap) {
                   const layer = this._player[lp];
                   if (!layer || !layer.sprite) continue;
-                  const found = R(this, `${window.currentBall}${suffix}`);
+                  const found = getAtlasFrame(this, `${window.currentBall}${suffix}`);
                   if (found) {
                     layer.sprite.setTexture(found.atlas, found.frame);
                     layer.sprite.setTint(tint);
@@ -1213,7 +1213,7 @@ class xs extends Phaser.Scene {
                 for (const { lp, suffix, tint } of layerMap) {
                   const layer = this._player[lp];
                   if (!layer || !layer.sprite) continue;
-                  const found = R(this, `${window.currentWave}${suffix}`);
+                  const found = getAtlasFrame(this, `${window.currentWave}${suffix}`);
                   if (found) {
                     layer.sprite.setTexture(found.atlas, found.frame);
                     if (tint !== null) layer.sprite.setTint(tint);
@@ -1230,7 +1230,7 @@ class xs extends Phaser.Scene {
                 for (const { lp, suffix, tint } of layerMap) {
                   const layer = this._player[lp];
                   if (!layer || !layer.sprite) continue;
-                  const found = R(this, `${window.currentBird}${suffix}`);
+                  const found = getAtlasFrame(this, `${window.currentBird}${suffix}`);
                   if (found) {
                     layer.sprite.setTexture(found.atlas, found.frame);
                     if (tint !== null) layer.sprite.setTint(tint);
@@ -1507,8 +1507,14 @@ class xs extends Phaser.Scene {
         this._releaseButton();
       }
     });
-    window.addEventListener("pointerup", () => this._releaseButton());
-    window.addEventListener("touchend", () => this._releaseButton());
+    if (!window.gdpointerup) {
+      window.gdpointerup = true;
+      window.addEventListener("pointerup", () => this._releaseButton());
+    }
+    if (!window.gdtouchend) {
+      window.gdtouchend = true;
+      window.addEventListener("touchend", () => this._releaseButton());
+    }
     this.scale.on("enterfullscreen", () => this._onFullscreenChange(true));
     this.scale.on("leavefullscreen", () => this._onFullscreenChange(false));
 
@@ -1523,12 +1529,18 @@ class xs extends Phaser.Scene {
         this._audio.resumeMusic();
       }
     });
-    window.addEventListener("orientationchange", () => {
-      this.time.delayedCall(100, () => this.scale.refresh());
-    });
-    window.addEventListener("resize", () => {
-      this.scale.refresh();
-    });
+    if (!window.gdorientationchange) {
+      window.gdorientationchange = true;
+      window.addEventListener("orientationchange", () => {
+        this.time.delayedCall(100, () => this.scale.refresh());
+      });
+    }
+    if (!window.gdresize) {
+      window.gdresize = true;
+      window.addEventListener("resize", () => {
+        this.scale.refresh();
+      });
+    }
     if (this.game.registry.get("fadeInFromBlack")) {
       this.game.registry.remove("fadeInFromBlack");
       this.cameras.main.fadeIn(400, 0, 0, 0);
@@ -2547,10 +2559,10 @@ _buildSettingsPopup() {
     const _0x3cdf70a = this.add.bitmapText(xPos, yPos, "goldFont", "Modded by:", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70a);
     yPos += 35;
-    const _0x3cdf70b = this.add.bitmapText(xPos, yPos, "goldFont", "AntiMatter, breadbb, bog, aloaf,", 40).setOrigin(0.5, 0.5).setScale(0.6);
+    const _0x3cdf70b = this.add.bitmapText(xPos, yPos, "goldFont", "breadbb, PinkDev, rohanis0000,", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70b);
     yPos += 35;
-    const _0x3cdf70c = this.add.bitmapText(xPos, yPos, "goldFont", "PinkDev, rohanis0000, arbstro,", 40).setOrigin(0.5, 0.5).setScale(0.6);
+    const _0x3cdf70c = this.add.bitmapText(xPos, yPos, "goldFont", "bog, AntiMatter, arbstro, aloaf", 40).setOrigin(0.5, 0.5).setScale(0.6);
     this._infoPopup.add(_0x3cdf70c);
     yPos += 35;
     const _0x3cdf70d = this.add.bitmapText(xPos, yPos, "goldFont", "and Lasokar.", 40).setOrigin(0.5, 0.5).setScale(0.6);
@@ -3026,6 +3038,18 @@ _buildSettingsPopup() {
     const _0x22e36e = this._cameraX - (this._menuCameraX || 0);
     this._level.shiftGroundTiles(_0x22e36e);
     this._playerWorldX = this._cameraX;
+    let speedKey = parseInt(window.settingsMap["kA4"] || "0");
+    if (speedKey == 0) {
+      playerSpeed = SpeedPortal.ONE_TIMES;
+    } else if (speedKey == 1) {
+      playerSpeed = SpeedPortal.HALF;
+    } else if (speedKey == 2) {
+      playerSpeed = SpeedPortal.TWO_TIMES;
+    } else if (speedKey == 3) {
+      playerSpeed = SpeedPortal.THREE_TIMES;
+    } else if (speedKey == 4) {
+      playerSpeed = SpeedPortal.FOUR_TIMES;
+    }
     this._state.y = 30;
     this._state.onGround = true;
     this._level.additiveContainer.setVisible(true);
@@ -3207,7 +3231,18 @@ _buildSettingsPopup() {
     this._player2.setBallVisible(false);
     this._player2.setWaveVisible(false);
     this._glitterEmitter.stop();
-    playerSpeed = SpeedPortal.ONE_TIMES;
+    let speedKey = parseInt(window.settingsMap["kA4"] || "0");
+    if (speedKey == 0) {
+      playerSpeed = SpeedPortal.ONE_TIMES;
+    } else if (speedKey == 1) {
+      playerSpeed = SpeedPortal.HALF;
+    } else if (speedKey == 2) {
+      playerSpeed = SpeedPortal.TWO_TIMES;
+    } else if (speedKey == 3) {
+      playerSpeed = SpeedPortal.THREE_TIMES;
+    } else if (speedKey == 4) {
+      playerSpeed = SpeedPortal.FOUR_TIMES;
+    }
     this._level.resetObjects();
     this._level.shiftGroundTiles(this._cameraX - _0x2ba78a);
     this._level.resetGroundState();
@@ -3393,7 +3428,18 @@ _buildSettingsPopup() {
     if (typeof checkpoint.speed === "number") {
       playerSpeed = checkpoint.speed;
     } else {
+    let speedKey = parseInt(window.settingsMap["kA4"] || "0");
+    if (speedKey == 0) {
       playerSpeed = SpeedPortal.ONE_TIMES;
+    } else if (speedKey == 1) {
+      playerSpeed = SpeedPortal.HALF;
+    } else if (speedKey == 2) {
+      playerSpeed = SpeedPortal.TWO_TIMES;
+    } else if (speedKey == 3) {
+      playerSpeed = SpeedPortal.THREE_TIMES;
+    } else if (speedKey == 4) {
+      playerSpeed = SpeedPortal.FOUR_TIMES;
+    }
     }
     this._level.resetColorTriggers();
     this._level.resetAlphaTriggers();
@@ -3751,7 +3797,7 @@ _buildSettingsPopup() {
       if (window._animTimer - (_as._lastAnimSwap || 0) >= _as._animInterval) {
         _as._lastAnimSwap = window._animTimer;
         _as._animIdx = (_as._animIdx + 1) % _as._animFrames.length;
-        let _fr = R(_as._animScene, _as._animFrames[_as._animIdx]);
+        let _fr = getAtlasFrame(_as._animScene, _as._animFrames[_as._animIdx]);
         if (_fr) {
           try {
             _as.setTexture(_fr.atlas, _fr.frame);
@@ -4034,9 +4080,9 @@ _applyMirrorEffect() {
     const _0x356782 = this._level.endXPos - this._cameraX;
     const _0x2d967b = b(this._endPortalGameY) + this._cameraY;
     for (let _0x481f7c = 0; _0x481f7c < 5; _0x481f7c++) {
-      this.time.delayedCall(_0x481f7c * 50, () => _s(this, _0x356782, _0x2d967b, 10, screenWidth, 500, false, true, window.mainColor));
+      this.time.delayedCall(_0x481f7c * 50, () => circleEffect(this, _0x356782, _0x2d967b, 10, screenWidth, 500, false, true, window.mainColor));
     }
-    _s(this, _0x356782, _0x2d967b, 10, 1000, 500, true, false, window.mainColor);
+    circleEffect(this, _0x356782, _0x2d967b, 10, 1000, 500, true, false, window.mainColor);
     this._showCompleteEffect();
   }
   _showCompleteEffect() {
@@ -4184,14 +4230,14 @@ _applyMirrorEffect() {
     }
     const _0x2eadf2 = this._level.endXPos - this._cameraX;
     const _0x380b24 = b(this._endPortalGameY) + this._cameraY;
-    _s(this, _0x2eadf2, _0x380b24, 10, screenWidth, 800, true, false, window.mainColor);
-    _s(this, _0x56628c, 250, 10, 1000, 800, true, false, window.mainColor);
+    circleEffect(this, _0x2eadf2, _0x380b24, 10, screenWidth, 800, true, false, window.mainColor);
+    circleEffect(this, _0x56628c, 250, 10, 1000, 800, true, false, window.mainColor);
     for (let _0x579e05 = 0; _0x579e05 < 5; _0x579e05++) {
-      this.time.delayedCall(_0x579e05 * 50, () => _s(this, _0x2eadf2, _0x380b24, 10, screenWidth, 500, false, true, window.mainColor));
+      this.time.delayedCall(_0x579e05 * 50, () => circleEffect(this, _0x2eadf2, _0x380b24, 10, screenWidth, 500, false, true, window.mainColor));
     }
     for (let _0x429722 = 0; _0x429722 < 10; _0x429722++) {
       const _0xbf7dd0 = _0x429722 * 150 + (Math.random() * 160 - 80);
-      this.time.delayedCall(Math.max(0, _0xbf7dd0), () => ws(this, window.mainColor, window.secondaryColor));
+      this.time.delayedCall(Math.max(0, _0xbf7dd0), () => particleEffect(this, window.mainColor, window.secondaryColor));
     }
     this.time.delayedCall(1500, () => this._showEndLayer());
   }
@@ -4265,7 +4311,7 @@ _applyMirrorEffect() {
       url: "https://discord.gg/TfEzAVWPSJ"
     }, {
       key: "downloadSteam_001",
-      url: "https://store.steampowered.com/app/322170/Geometry_Dash"
+      url: "https://github.com/web-dashers/web-dashers.github.io"
     }];
     for (let _0x10f8cc = 0; _0x10f8cc < _0x34b1bd.length; _0x10f8cc++) {
       const _0xd7310b = _0x34b1bd[_0x10f8cc];
