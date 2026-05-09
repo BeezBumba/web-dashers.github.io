@@ -693,11 +693,11 @@ class PlayerObject {
     });
     this._shipDragEmitter.gravityX = this.p.mirrored ? 700 : -700;
     this._shipDragEmitter.setScale(this.p.gravityFlipped ? { x: -1, y: 1 } : { x: 1, y: 1 });
-    const _0x2ac9d0 = this.p.isFlying && this.p.onGround && (this.p.gravityFlipped ? this.p.onCeiling : !this.p.onCeiling);
-    if (_0x2ac9d0 && !this._shipDragActive) {
+    const shipOnGround = this.p.isFlying && this.p.onGround && (this.p.gravityFlipped ? this.p.onCeiling : !this.p.onCeiling);
+    if (shipOnGround && !this._shipDragActive) {
       this._shipDragEmitter.start();
       this._shipDragActive = true;
-    } else if (!_0x2ac9d0 && this._shipDragActive) {
+    } else if (!shipOnGround && this._shipDragActive) {
       this._shipDragEmitter.stop();
       this._shipDragActive = false;
     }
@@ -769,7 +769,7 @@ class PlayerObject {
       }
     }
   }
-  syncSprites(cameraX, cameraY, _0x3afedf, mirrorOffset) {
+  syncSprites(cameraX, cameraY, deltaTime, mirrorOffset) {
     if (this._endAnimating) {
       return;
     }
@@ -783,20 +783,22 @@ class PlayerObject {
 if (this.p.isFlying || this.p.isUfo) {
       const _0x3904f8 = 10;
       const playerOffset = this.p.gravityFlipped ? -30 : 10; 
-      const _0x285611 = Math.cos(playerRotation);
-      const _0x501bf9 = Math.sin(playerRotation);
-      const _0x1b1d28 = -_0x3904f8 * _0x501bf9;
-      const _0x185f91 = _0x3904f8 * _0x285611; 
-      const _0x562424 = playerOffset * _0x501bf9;
-      const _0x3011c9 = -playerOffset * _0x285611;
+      const cosRotation = Math.cos(playerRotation);
+      const sinRotation = Math.sin(playerRotation);
+      const _mirrorX = this.p.mirrored ? -1 : 1;
+      const _miniS = this.p.isMini ? 0.6 : 1;
+      const offsetX = -_0x3904f8 * sinRotation * _mirrorX * _miniS;
+      const _0x185f91 = _0x3904f8 * cosRotation * _miniS;
+      const _0x562424 = playerOffset * sinRotation * _mirrorX * _miniS;
+      const _0x3011c9 = -playerOffset * cosRotation * _miniS;
       const _ufoMode = this.p.isUfo && !this.p.isFlying;
       if (this.p.isFlying) {
         for (const layer of this._shipLayers) {
           if (layer) {
-            layer.sprite.x = _0x7f0705 + _0x1b1d28;
-            layer.sprite.y = _0x1a433c + _0x185f91 + (this.p.gravityFlipped ? -20 : 0);
+            layer.sprite.x = _0x7f0705 + offsetX;
+            const gravityOffset = this.p.gravityFlipped ? -20 * _miniS : 0;
+            layer.sprite.y = _0x1a433c + _0x185f91 + gravityOffset;
             layer.sprite.rotation = this.p.mirrored ? -playerRotation : playerRotation;
-            const _miniS = this.p.isMini ? 0.6 : 1;
             layer.sprite.scaleY = this.p.gravityFlipped ? -_miniS : _miniS;
             layer.sprite.scaleX = this.p.mirrored ? -_miniS : _miniS;
           }
@@ -806,7 +808,7 @@ if (this.p.isFlying || this.p.isUfo) {
         for (const layer of this._birdLayers) {
           if (layer) {
             layer.sprite.setVisible(true);
-            layer.sprite.x = _0x7f0705 + _0x1b1d28;
+            layer.sprite.x = _0x7f0705 + offsetX;
             layer.sprite.y = _0x1a433c + _0x185f91 + (this.p.gravityFlipped ? -15 : 5);
             layer.sprite.rotation = this.p.mirrored ? -playerRotation : playerRotation;
             const _miniS = this.p.isMini ? 0.6 : 1;
@@ -883,13 +885,13 @@ if (this.p.isFlying || this.p.isUfo) {
       }
     }
     if (this.p.isWave && this._waveSpriteLayer) {
-      const _0x3f036a = this.p.mirrored ? 1 : -1;
-      this._waveSpriteLayer.sprite.x += 1.5 * _0x3f036a;
+      const isMirrored = this.p.mirrored ? 1 : -1;
+      this._waveSpriteLayer.sprite.x += 1.5 * isMirrored;
       this._waveSpriteLayer.sprite.y -= 1;
     }
-    this._updateParticles(cameraX, cameraY, _0x3afedf);
+    this._updateParticles(cameraX, cameraY, deltaTime);
     
-    this._updateDashAnimation(_0x3afedf * 1000);
+    this._updateDashAnimation(deltaTime * 1000);
     if (this._dashAnimationSprite && this._dashAnimationSprite.visible) {
       this._dashAnimationSprite.x = _0x7f0705;
       this._dashAnimationSprite.y = _0x1a433c;
@@ -925,17 +927,18 @@ if (this.p.isFlying || this.p.isUfo) {
     this._streak.reset();
     this._streak.start();
     this.setWaveVisible(false);
+    this.setCubeVisible(true);
     this.setShipVisible(true);
-    for (const _0xc1f7c3 of this._playerLayers) {
-      if (_0xc1f7c3) {
-        _0xc1f7c3.sprite.setScale(0.55);
+    for (const _layer of this._playerLayers) {
+      if (_layer) {
+        _layer.sprite.setScale(0.55);
       }
     }
-    let _0x17d728 = this.p.y;
+    let playerY = this.p.y;
     if (_0xeb37c6) {
-      _0x17d728 = _0xeb37c6.portalY !== undefined ? _0xeb37c6.portalY : _0xeb37c6.y;
+      playerY = _0xeb37c6.portalY !== undefined ? _0xeb37c6.portalY : _0xeb37c6.y;
     }
-    this._gameLayer.setFlyMode(true, _0x17d728, f, false);
+    this._gameLayer.setFlyMode(true, playerY, f, false);
   }
   exitShipMode() {
     if (this.p.isFlying) {
@@ -983,11 +986,11 @@ if (this.p.isFlying || this.p.isUfo) {
     this.setCubeVisible(false);
     this.setWaveVisible(false);
     this.setBallVisible(true);
-    let _0x18df19 = this.p.y;
+    let playerY = this.p.y;
     if (_0x36bb3d) {
-      _0x18df19 = _0x36bb3d.portalY !== undefined ? _0x36bb3d.portalY : _0x36bb3d.y;
+      playerY = _0x36bb3d.portalY !== undefined ? _0x36bb3d.portalY : _0x36bb3d.y;
     }
-    this._gameLayer.setFlyMode(true, _0x18df19 + a, f - a * 2, true);
+    this._gameLayer.setFlyMode(true, playerY + a, f - a * 2, true);
   }
   exitBallMode() {
     if (!this.p.isBall) {
@@ -1025,11 +1028,11 @@ if (this.p.isFlying || this.p.isUfo) {
     this.setBallVisible(false);
     this.setShipVisible(false);
     this.setWaveVisible(true);
-    let _0x38b484 = this.p.y;
+    let playerY = this.p.y;
     if (_0x5a10cc) {
-      _0x38b484 = _0x5a10cc.portalY !== undefined ? _0x5a10cc.portalY : _0x5a10cc.y;
+      playerY = _0x5a10cc.portalY !== undefined ? _0x5a10cc.portalY : _0x5a10cc.y;
     }
-    this._gameLayer.setFlyMode(true, _0x38b484, f, false);
+    this._gameLayer.setFlyMode(true, playerY, f, false);
   }
   exitWaveMode() {
     if (!this.p.isWave) {
@@ -1193,11 +1196,11 @@ if (this.p.isFlying || this.p.isUfo) {
     this._shipDragActive = false;
     this._streak.stop();
     this._streak.reset();
-    const _0x3f4b84 = this._scene;
-    const _0x3f0446 = _0x3f4b84._getMirrorXOffset(_0x3f4b84._playerWorldX - _0x3f4b84._cameraX);
+    const scene = this._scene;
+    const _0x3f0446 = scene._getMirrorXOffset(scene._playerWorldX - scene._cameraX);
     const _0x53ac5b = b(this.p.y) + this._lastCameraY;
     const _0x281e43 = 0.9;
-    _0x3f4b84.add.particles(_0x3f0446, _0x53ac5b, "GJ_WebSheet", {
+    scene.add.particles(_0x3f0446, _0x53ac5b, "GJ_WebSheet", {
       frame: "square.png",
       speed: {
         min: 200,
@@ -1232,11 +1235,11 @@ if (this.p.isFlying || this.p.isUfo) {
         max: 20
       }
     }).setScrollFactor(0).setDepth(15);
-    const _0x438d80 = _0x3f4b84.add.graphics().setScrollFactor(0).setDepth(15).setBlendMode(S);
+    const _0x438d80 = scene.add.graphics().setScrollFactor(0).setDepth(15).setBlendMode(S);
     const _0x4683eb = {
       t: 0
     };
-    _0x3f4b84.tweens.add({
+    scene.tweens.add({
       targets: _0x4683eb,
       t: 1,
       duration: 500,

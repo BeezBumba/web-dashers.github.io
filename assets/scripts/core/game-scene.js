@@ -4210,36 +4210,55 @@ if (!this._state.isFlying && !this._state.isWave && !this._state.isUfo) {
     this._applyMirrorEffect();
   }
 _applyMirrorEffect() {
-    const isMirrored = this._state.mirrored;
-    const containers = [this._level.additiveContainer, this._level.container, this._level.topContainer];
-    if (isMirrored) {
-      for (const c of containers) {
-        c.scaleX = -1;
-        c.x = this._cameraX + screenWidth;
-      }
-      for (const tile of this._level._groundTiles) {
-        tile.x = screenWidth - tile.x - this._level._tileW;
-        tile.setFlipX(true);
-      }
-      for (const tile of this._level._ceilingTiles) {
-        tile.x = screenWidth - tile.x - this._level._tileW;
-        tile.setFlipX(true);
-      }
-    } else {
-      for (const c of containers) {
-        if (c.scaleX !== 1) c.scaleX = 1;
-      }
-      for (const tile of this._level._groundTiles) {
-        tile.setFlipX(false);
-      }
-      for (const tile of this._level._ceilingTiles) {
-        tile.setFlipX(false);
-      }
+    const targetMirror = this._state.mirrored ? 1 : 0;
+
+    // Lazy-init transition state.
+    if (this._mirrorTransitionT === undefined) {
+      this._mirrorTransitionT = targetMirror;
+      this._mirrorTransitionTarget = targetMirror;
+      this._mirrorTransitionDuration = 0.5;
     }
-    this._bg.setFlipX(isMirrored);
+
+    this._mirrorTransitionTarget = targetMirror;
+    const dt = Math.min(0.05, (this.game?.loop?.delta || 16.6667) / 1000);
+    const step = dt / this._mirrorTransitionDuration;
+
+    if (this._mirrorTransitionT < this._mirrorTransitionTarget) {
+      this._mirrorTransitionT = Math.min(this._mirrorTransitionTarget, this._mirrorTransitionT + step);
+    } else if (this._mirrorTransitionT > this._mirrorTransitionTarget) {
+      this._mirrorTransitionT = Math.max(this._mirrorTransitionTarget, this._mirrorTransitionT - step);
+    }
+
+    const easedT = Phaser.Math.Easing.Sine.InOut(this._mirrorTransitionT);
+    const containers = [this._level.additiveContainer, this._level.container, this._level.topContainer];
+    const normalContainerX = -this._cameraX;
+    const mirroredContainerX = this._cameraX + screenWidth;
+
+    for (const c of containers) {
+      if (!c) continue;
+      c.scaleX = Phaser.Math.Linear(1, -1, easedT);
+      c.x = Phaser.Math.Linear(normalContainerX, mirroredContainerX, easedT);
+    }
+
+    const applyTileTransition = (tiles) => {
+      for (const tile of tiles) {
+        if (!tile) continue;
+        const normalX = tile.x;
+        const mirroredX = screenWidth - normalX - this._level._tileW;
+        tile.x = Phaser.Math.Linear(normalX, mirroredX, easedT);
+        tile.setFlipX(easedT > 0.5);
+      }
+    };
+
+    applyTileTransition(this._level._groundTiles);
+    applyTileTransition(this._level._ceilingTiles);
+    this._bg.setFlipX(easedT > 0.5);
   }
   _getMirrorXOffset(xOffset) {
-    return this._state.mirrored ? screenWidth - xOffset : xOffset;
+    const targetMirror = this._state && this._state.mirrored ? 1 : 0;
+    const transitionT = this._mirrorTransitionT === undefined ? targetMirror : this._mirrorTransitionT;
+    const easedT = Phaser.Math.Easing.Sine.InOut(Phaser.Math.Clamp(transitionT, 0, 1));
+    return Phaser.Math.Linear(xOffset, screenWidth - xOffset, easedT);
   }
   _enableDualMode() {
     if (this._isDual) return;

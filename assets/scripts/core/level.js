@@ -230,6 +230,7 @@ const flyPortal = "fly";
 const cubePortal = "cube";
 const portalWaveType = "portal_wave";
 const portalUfoType = "portal_ufo";
+const teleportPortalType = "portal_teleport";
 const allObjects = window.allobjects();
 if (!allObjects[1331]) {
   allObjects[1331] = {
@@ -783,6 +784,7 @@ window.LevelObject = class LevelObject {
   _spawnLevelObjects(_0x35f1ae) {
     const scene = this._scene;
     let _0x443c50 = new Set();
+    let _portalUid = 1;
     this._lastObjectX = 0;
     for (let levelObj of _0x35f1ae) {
       let objectDef = getObjectFromId(levelObj.id);
@@ -1224,6 +1226,7 @@ window.LevelObject = class LevelObject {
             660: "wave",
             111: "ufo",
             1331: "spider",
+            1933: "teleport",
             286: "dual_on",
             287: "dual_off",
           }[levelObj.id];
@@ -1246,6 +1249,7 @@ window.LevelObject = class LevelObject {
             grow: "portal_mini_off",
             dual_on: "portal_dual_on",
             dual_off: "portal_dual_off",
+            teleport: teleportPortalType,
           }[_0x5bcd81] || null;
           if (levelObj.id === 111) {
           }
@@ -1254,6 +1258,10 @@ window.LevelObject = class LevelObject {
           if (_0x25452a) {
             let _0x4bd7bc = new Collider(_0x25452a, worldX, worldY, _0xad0974, _0x2c2226, levelObj.rot || 0);
             _0x4bd7bc.portalY = worldY;
+            _0x4bd7bc._portalUid = _portalUid++;
+            if (_0x25452a === teleportPortalType) {
+              _0x4bd7bc.teleportLinkId = parseInt(levelObj._raw[13] ?? 0, 10) || 0;
+            }
             _registerCollider(_0x4bd7bc);
             this.objects.push(_0x4bd7bc);
             this._addCollisionToSection(_0x4bd7bc);
@@ -1308,6 +1316,7 @@ window.LevelObject = class LevelObject {
     _0x443c50.size;
     if (_0x443c50.size > 0) {
     }
+    this._linkTeleportPortals();
     let colTypeCounts = {};
     for (let obj of this.objects) {
       colTypeCounts[obj.type] = (colTypeCounts[obj.type] || 0) + 1;
@@ -1327,6 +1336,27 @@ window.LevelObject = class LevelObject {
       }
     }
     this.endXPos = Math.max(screenWidth + 1200, this._lastObjectX + 680);
+  }
+  _linkTeleportPortals() {
+    const _byLinkId = new Map();
+    for (const _obj of this.objects) {
+      if (_obj.type !== teleportPortalType) continue;
+      const _linkId = _obj.teleportLinkId || 0;
+      if (!_byLinkId.has(_linkId)) {
+        _byLinkId.set(_linkId, []);
+      }
+      _byLinkId.get(_linkId).push(_obj);
+    }
+    for (const _portals of _byLinkId.values()) {
+      _portals.sort((a, b) => a.x - b.x);
+      if (_portals.length < 2) {
+        _portals[0].teleportTarget = null;
+        continue;
+      }
+      for (let _i = 0; _i < _portals.length; _i++) {
+        _portals[_i].teleportTarget = _portals[(_i + 1) % _portals.length];
+      }
+    }
   }
   createEndPortal(_0x41fbdb) {
     var _0x400605;
