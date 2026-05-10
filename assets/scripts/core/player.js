@@ -783,12 +783,13 @@ class PlayerObject {
 if (this.p.isFlying || this.p.isUfo) {
       const _0x3904f8 = 10;
       const playerOffset = this.p.gravityFlipped ? -30 : 10; 
-      const _0x285611 = Math.cos(playerRotation);
-      const _0x501bf9 = Math.sin(playerRotation);
-      const _0x1b1d28 = -_0x3904f8 * _0x501bf9;
-      const _0x185f91 = _0x3904f8 * _0x285611; 
-      const _0x562424 = playerOffset * _0x501bf9;
-      const _0x3011c9 = -playerOffset * _0x285611;
+      const cosRotation = Math.cos(playerRotation);
+      const sinRotation = Math.sin(playerRotation);
+	  const mirrored = this.p.mirrored ? -1 : 1;
+      const _0x1b1d28 = -_0x3904f8 * sinRotation * mirrored;
+      const _0x185f91 = _0x3904f8 * cosRotation; 
+      const _0x562424 = playerOffset * sinRotation * mirrored;
+      const _0x3011c9 = -playerOffset * cosRotation;
       const _ufoMode = this.p.isUfo && !this.p.isFlying;
       if (this.p.isFlying) {
         for (const layer of this._shipLayers) {
@@ -1626,10 +1627,10 @@ if (this.p.isFlying || this.p.isUfo) {
   }
   updateBallRoll(_0x1dd8af, onSurface) {
     const gravityDir = this.p.gravityFlipped ? -1 : 1;
-	const rollDir = this.p.mirrored ? -gravityDir: gravityDir;
+	  const rollDir = this.p.mirrored ? -gravityDir : gravityDir;
     const speedFactor = onSurface ? 0.5 : 0.35;
     const miniRollScale = this.p.isMini ? 1 / 0.8 : 1;
-    this._rotation += _0x1dd8af / (g / 2) * rollDir * speedFactor * miniRollScale;
+    this._rotation += _0x1dd8af / (g / 2) * gravityDir * speedFactor * miniRollScale;
   }
   updateShipRotation(_0x217ad3) {
     let _0x48f422 = -(this.p.y - this.p.lastY);
